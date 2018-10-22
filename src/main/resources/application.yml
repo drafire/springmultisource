@@ -24,3 +24,9 @@ ds:
         type: com.alibaba.druid.pool.DruidDataSource
         driverClassName: com.mysql.jdbc.Driver
         maxPoolSize: 20
+spring:
+  application:
+    name: spring-multi-source
+
+mybatis:
+  mapper-location: classpath:mapping/*.xml
