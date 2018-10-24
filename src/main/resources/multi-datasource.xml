@@ -1,16 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xmlns:tx="http://www.springframework.org/schema/cache"
+       xmlns:context="http://www.springframework.org/schema/context"
        xmlns:tx="http://www.springframework.org/schema/tx"
        xmlns:aop="http://www.springframework.org/schema/aop"
 
        xsi:schemaLocation="
        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
-       http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache.xsd
+       http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
        http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd
        http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd">
 
+    <!--xmlns:tx="http://www.springframework.org/schema/cache" 上面多了这一行就会报错，为什么呢-->
     <bean id="sellDataSource" name="sellDataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
         <property name="driverClass" value="${ds.sell.driverClassName}"/>
         <property name="user" value="${ds.sell.username}"></property>
@@ -73,8 +74,22 @@
         </tx:attributes>
     </tx:advice>
 
-    <aop:config></aop:config>
-   <aop:pointcut id="transactionPointcut" expression="execution(* com.drafire.springmultisource.service..*Impl.*(..))" >
-       <aop:advisor pointcut-ref="transactionPointcut" advice-ref="transactionAdvice" order="2"/>
-   </aop:pointcut>
+    <aop:config>
+        <aop:pointcut id="transactionPointcut" expression="execution(* com.drafire.springmultisource.service..*Impl.*(..))"/>
+        <!-- 设置order的值为2，使得数据库事物开启在数据源切换之后，否则数据源切换不会达到效果  -->
+        <aop:advisor pointcut-ref="transactionPointcut" advice-ref="transactionAdvice" order="2"/>
+    </aop:config>
+
+    <!-- 数据源动态切换实体 -->
+    <bean id="dataSourceInterceptor" class="com.drafire.springmultisource.core.DynamicDataSourceInterceptor"></bean>
+
+    <!-- 数据源动态切换切面配置 -->
+    <aop:config>
+
+        <aop:aspect id="dataSourceAspect" ref="dataSourceInterceptor" order="1">
+            <!-- 拦截所有service实现类的方法 -->
+            <aop:pointcut id="dataSourcePointcut" expression="execution(* com.drafire.springmultisource.service..*Impl.*(..))"></aop:pointcut>
+        </aop:aspect>
+    </aop:config>
+
 </beans>
